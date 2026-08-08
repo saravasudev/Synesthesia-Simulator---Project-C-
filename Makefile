@@ -36,26 +36,26 @@ CXXFLAGS_BASE:=$(CXXFLAGS_BASE) -std=c++20 -Wall -Werror -pedantic-errors -Iincl
 LDFLAGS_BASE:=$(LDFLAGS_BASE) -std=c++20
 
 # ## platform-specific options for SDL2
-# ifeq ($(OS),Windows_NT)
-# 	CXXFLAGS_BASE:=$(CXXFLAGS_BASE) -I/mingw64/include/SDL2
-# 	LDFLAGS_BASE:=$(LDFLAGS_BASE) -lmingw32 -lSDL2main -lSDL2 -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_net -lSDL2_ttf
-# 	DOXYGEN=doxygen
-# else ifeq ($(shell sh -c 'uname'),Darwin)
-# 	CXXFLAGS_BASE:=$(CXXFLAGS_BASE) -F/Library/Frameworks -I/Library/Frameworks/SDL2.framework/Headers -I/Library/Frameworks/SDL2_image.framework/Headers -I/Library/Frameworks/SDL2_mixer.framework/Headers -I/Library/Frameworks/SDL2_ttf.framework/Headers
-# 	LDFLAGS_BASE:=$(LDFLAGS_BASE) -F/Library/Frameworks -framework SDL2 -framework SDL2_gfx -framework SDL2_image -framework SDL2_mixer -framework SDL2_net -framework SDL2_ttf
-# 	ifneq ($(wildcard /Applications/Doxygen.app/Contents/Resources/doxygen),)
-# 		DOXYGEN=/Applications/Doxygen.app/Contents/Resources/doxygen
-# 	else
-# 		DOXYGEN=doxygen
-# 	endif
-# else
-# 	ifeq (, $(shell which sdl2-config))
-# 	else
-# 		CXXFLAGS_BASE:=$(CXXFLAGS_BASE) $(shell sh -c 'sdl2-config --cflags')
-# 		LDFLAGS_BASE:=$(LDFLAGS_BASE) $(shell sh -c 'sdl2-config --libs') -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_net -lSDL2_ttf
-# 	endif
-# 	DOXYGEN=doxygen
-# endif
+ifeq ($(OS),Windows_NT)
+ 	CXXFLAGS_BASE:=$(CXXFLAGS_BASE) -I/mingw64/include/SDL2
+ 	LDFLAGS_BASE:=$(LDFLAGS_BASE) -lmingw32 -lSDL2main -lSDL2 -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_net -lSDL2_ttf
+ 	DOXYGEN=doxygen
+else ifeq ($(shell sh -c 'uname'),Darwin)
+ 	CXXFLAGS_BASE:=$(CXXFLAGS_BASE) -F/Library/Frameworks -I/Library/Frameworks/SDL2.framework/Headers -I/Library/Frameworks/SDL2_image.framework/Headers -I/Library/Frameworks/SDL2_mixer.framework/Headers -I/Library/Frameworks/SDL2_ttf.framework/Headers
+ 	LDFLAGS_BASE:=$(LDFLAGS_BASE) -F/Library/Frameworks -framework SDL2 -framework SDL2_gfx -framework SDL2_image -framework SDL2_mixer -framework SDL2_net -framework SDL2_ttf
+ 	ifneq ($(wildcard /Applications/Doxygen.app/Contents/Resources/doxygen),)
+ 		DOXYGEN=/Applications/Doxygen.app/Contents/Resources/doxygen
+ 	else
+ 		DOXYGEN=doxygen
+ 	endif
+else
+ 	ifeq (, $(shell which sdl2-config))
+ 	else
+ 		CXXFLAGS_BASE:=$(CXXFLAGS_BASE) $(shell sh -c 'sdl2-config --cflags')
+ 		LDFLAGS_BASE:=$(LDFLAGS_BASE) $(shell sh -c 'sdl2-config --libs') -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_net -lSDL2_ttf
+ 	endif
+ 	DOXYGEN=doxygen
+endif
 
 ## files
 DEFAULT_EXE_DBG=$(addsuffix _dbg,$(DEFAULT_EXE))
