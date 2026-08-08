@@ -9,9 +9,11 @@
 #include <vector>
 #include <random>
 #include <set>
+#include <cctype>
 #include "scene.hpp"
 #include "shape.hpp"
 #include "pitch_mapper.hpp"
+#include "grapheme_mapper.hpp"
 #include "audio_buffer.hpp"
 #include "synesthesia_exceptions.hpp"
 
@@ -21,6 +23,8 @@ namespace {
     const double SAMPLE_RATE = 44100.0;
     const double NOTE_DURATION = 0.5;
     const int TERMINAL_WIDTH = 60;
+
+    enum class Mode { Notes, Text };
 
     std::mt19937 rng(std::random_device{}());
 
@@ -47,6 +51,15 @@ namespace {
         scene.spawn(std::make_unique<Ripple>(color, randomIndent(), randomSize(1.0f, 3.0f)));
         scene.spawn(std::make_unique<Circle>(color, randomIndent(), randomSize(2.0f, 6.0f)));
         scene.spawn(std::make_unique<Square>(color, randomIndent(), randomSize(3.0f, 8.0f)));
+    }
+
+    // Prints one typed character in its fixed grapheme color, immediately
+    // and directly, rather than as an animated Shape, since a synesthete's
+    // letter-color association is instantaneous and doesn't fade like a
+    // sound's ripple does.
+    void printGrapheme(char c) {
+        Color color = colorForChar(c);
+        std::cout << color.toAnsi() << c << "\033[0m" << std::flush;
     }
 
     // Puts the terminal into raw mode so single keypresses are read
@@ -95,9 +108,10 @@ int main(int argc, char** argv) {
     Scene scene;
     RawTerminal rawTerminal;
     bool running = true;
+    Mode mode = Mode::Notes;
 
-    std::cout << "Press keys 1-9 to play notes (hold multiple at once for a chord). "
-                 "Press q to quit.\n";
+    std::cout << "Note mode: press 1-9 to play notes (hold multiple for a chord).\n";
+    std::cout << "Press t to switch to text mode, Esc to return to note mode, q to quit.\n";
 
     auto lastTime = std::chrono::steady_clock::now();
 
@@ -115,58 +129,76 @@ int main(int argc, char** argv) {
         if (gotKey) {
             if (key == 'q') {
                 running = false;
-            } else if (key >= '1' && key <= '9') {
+            } else if (key == 27) { // Esc
+                if (mode == Mode::Text) {
+                    std::cout << "\nNote mode: press 1-9 to play notes.\n";
+                }
+                mode = Mode::Notes;
+            } else if (mode == Mode::Notes && key == 't') {
+                std::cout << "\nText mode: type letters to see their grapheme colors.\n";
+                mode = Mode::Text;
+            } else if (mode == Mode::Notes && key >= '1' && key <= '9') {
                 pendingChordKeys.insert(key);
                 lastKeyTime = std::chrono::steady_clock::now();
+            } else if (mode == Mode::Text && std::isalpha(static_cast<unsigned char>(key))) {
+                printGrapheme(key);
             }
         }
 
-        double sinceLastKey =
-            std::chrono::duration<double>(std::chrono::steady_clock::now() - lastKeyTime).count();
+        if (mode == Mode::Notes) {
+            double sinceLastKey = std::chrono::duration<double>(
+                std::chrono::steady_clock::now() - lastKeyTime).count();
 
-        // Once no new key has arrived for a short window, treat everything
-        // collected as one chord: mix their tones together and blend their
-        // mapped colors with Color::operator+ before spawning shapes.
-        if (!pendingChordKeys.empty() && sinceLastKey > CHORD_WINDOW_SECONDS) {
-            try {
-                std::size_t sampleCount = static_cast<std::size_t>(SAMPLE_RATE * NOTE_DURATION);
-                AudioBuffer mixed(sampleCount);
-                bool first = true;
-                Color blendedColor(0, 0, 0);
+            // Once no new key has arrived for a short window, treat everything
+            // collected as one chord: mix their tones together and blend their
+            // mapped colors with Color::operator+ before spawning shapes.
+            if (!pendingChordKeys.empty() && sinceLastKey > CHORD_WINDOW_SECONDS) {
+                try {
+                    std::size_t sampleCount =
+                        static_cast<std::size_t>(SAMPLE_RATE * NOTE_DURATION);
+                    AudioBuffer mixed(sampleCount);
+                    bool first = true;
+                    Color blendedColor(0, 0, 0);
 
-                for (char k : pendingChordKeys) {
-                    double freq = frequencyForKey(k);
-                    Color noteColor = mapFrequency<double>(freq, MIN_FREQ, MAX_FREQ);
-                    blendedColor = first ? noteColor : (blendedColor + noteColor);
-                    first = false;
+                    for (char k : pendingChordKeys) {
+                        double freq = frequencyForKey(k);
+                        Color noteColor = mapFrequency<double>(freq, MIN_FREQ, MAX_FREQ);
+                        blendedColor = first ? noteColor : (blendedColor + noteColor);
+                        first = false;
 
-                    AudioBuffer tone(sampleCount);
-                    fillHarmonicTone(tone, freq, SAMPLE_RATE);
-                    mixed = mixBuffers(mixed, tone);
+                        AudioBuffer tone(sampleCount);
+                        fillHarmonicTone(tone, freq, SAMPLE_RATE);
+                        mixed = mixBuffers(mixed, tone);
+                    }
+
+                    if (audioAvailable) {
+                        SDL_QueueAudio(device, mixed.data(), mixed.size() * sizeof(float));
+                    }
+
+                    spawnBurst(scene, blendedColor);
+                } catch (const InvalidFrequencyException& e) {
+                    std::cerr << e.what() << std::endl;
+                } catch (const AudioLoadException& e) {
+                    std::cerr << e.what() << std::endl;
                 }
 
-                if (audioAvailable) {
-                    SDL_QueueAudio(device, mixed.data(), mixed.size() * sizeof(float));
-                }
-
-                spawnBurst(scene, blendedColor);
-            } catch (const InvalidFrequencyException& e) {
-                std::cerr << e.what() << std::endl;
-            } catch (const AudioLoadException& e) {
-                std::cerr << e.what() << std::endl;
+                pendingChordKeys.clear();
             }
 
-            pendingChordKeys.clear();
+            auto currentTime = std::chrono::steady_clock::now();
+            float dt = std::chrono::duration<float>(currentTime - lastTime).count();
+            lastTime = currentTime;
+
+            scene.update(dt);
+            scene.draw();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(80));
+        } else {
+            // Text mode has no animation loop; it just waits for keypresses
+            // and prints them immediately, so sleep briefly to avoid
+            // busy-waiting on the CPU.
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
-
-        auto currentTime = std::chrono::steady_clock::now();
-        float dt = std::chrono::duration<float>(currentTime - lastTime).count();
-        lastTime = currentTime;
-
-        scene.update(dt);
-        scene.draw();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(80));
     }
 
     if (audioAvailable) {
