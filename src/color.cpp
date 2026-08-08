@@ -50,6 +50,9 @@ std::ostream& operator<<(std::ostream& os, const Color& c) {
 }
 
 std::string Color::toAnsi() const {
-    return "\033[38;2;" + std::to_string(r_) + ";" + std::to_string(g_) + ";" +
-           std::to_string(b_) + "m";
+    int r6 = (r_ * 5) / 255;
+    int g6 = (g_ * 5) / 255;
+    int b6 = (b_ * 5) / 255;
+    int index = 16 + (36 * r6) + (6 * g6) + b6;
+    return "\033[38;5;" + std::to_string(index) + "m";
 }
