@@ -18,3 +18,10 @@ if ! grep -q "(double)BASE" extern/cxxtest-4.4/cxxtest/ValueTraits.cpp; then
     sed -i 's/t \/= BASE/t \/= (double)BASE/' extern/cxxtest-4.4/cxxtest/ValueTraits.cpp
     sed -i 's/(t \*= BASE)/(t *= (double)BASE)/' extern/cxxtest-4.4/cxxtest/ValueTraits.cpp
 fi
+
+
+
+# On mac terminal  (for audio) 
+# cd ~/Synesthesia-Simulator---Project-C-
+# make exe
+# ./bin/main
