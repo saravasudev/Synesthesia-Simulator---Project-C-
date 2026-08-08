@@ -1,6 +1,10 @@
 #include "color.hpp"
 
-Color::Color() : r_(0), g_(0), b_(0), a_(255) {}
+// TODO: Implement the default constructor.
+// It should initialize r_, g_, b_ to 0 and a_ to 255 (fully opaque black).
+Color::Color() {
+    // TODO
+}
 
 Color::Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
     : r_(r), g_(g), b_(b), a_(a) {}
@@ -17,9 +21,13 @@ uint8_t Color::clampSub(uint8_t a, uint8_t b) {
     return diff < 0 ? 0 : static_cast<uint8_t>(diff);
 }
 
+// TODO: Implement operator+.
+// It should return a new Color whose r, g, b, a channels are each the
+// clamped sum of this Color's channel and other's channel.
+// Use clampAdd() for each channel.
 Color Color::operator+(const Color& other) const {
-    return Color(clampAdd(r_, other.r_), clampAdd(g_, other.g_),
-                 clampAdd(b_, other.b_), clampAdd(a_, other.a_));
+    // TODO
+    return Color();
 }
 
 Color Color::operator-(const Color& other) const {
@@ -35,8 +43,12 @@ Color& Color::operator+=(const Color& other) {
     return *this;
 }
 
+// TODO: Implement operator==.
+// It should return true if and only if all four channels (r, g, b, a)
+// are equal between this Color and other.
 bool Color::operator==(const Color& other) const {
-    return r_ == other.r_ && g_ == other.g_ && b_ == other.b_ && a_ == other.a_;
+    // TODO
+    return false;
 }
 
 bool Color::operator!=(const Color& other) const {
@@ -50,7 +62,6 @@ std::ostream& operator<<(std::ostream& os, const Color& c) {
 }
 
 std::string Color::toAnsi() const {
-    // Convert RGB to the nearest 256-color palette index (6x6x6 color cube).
     int r6 = (r_ * 5) / 255;
     int g6 = (g_ * 5) / 255;
     int b6 = (b_ * 5) / 255;

@@ -13,6 +13,9 @@ public:
 // Thrown when a frequency value passed to the pitch mapper is out of range.
 class InvalidFrequencyException : public std::invalid_argument {
 public:
-    explicit InvalidFrequencyException(const std::string& msg)
-        : std::invalid_argument("InvalidFrequencyException: " + msg) {}
+    // TODO: Implement this constructor.
+    // It should call the base class (std::invalid_argument) constructor,
+    // passing in a string that starts with "InvalidFrequencyException: "
+    // followed by msg. Look at AudioLoadException above for the pattern.
+    explicit InvalidFrequencyException(const std::string& msg);
 };
