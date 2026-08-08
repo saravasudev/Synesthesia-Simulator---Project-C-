@@ -59,12 +59,13 @@ int main(int argc, char** argv) {
     want.samples = 1024;
 
     SDL_AudioDeviceID device = SDL_OpenAudioDevice(nullptr, 0, &want, nullptr, 0);
-    if (device == 0) {
-        std::cerr << "SDL_OpenAudioDevice Error: " << SDL_GetError() << std::endl;
-        SDL_Quit();
-        return 1;
+    bool audioAvailable = (device != 0);
+    if (!audioAvailable) {
+        std::cerr << "Audio device unavailable, continuing without sound: "
+                  << SDL_GetError() << std::endl;
+    } else {
+        SDL_PauseAudioDevice(device, 0);
     }
-    SDL_PauseAudioDevice(device, 0);
 
     Scene scene;
     RawTerminal rawTerminal;
@@ -87,7 +88,9 @@ int main(int argc, char** argv) {
                     std::size_t sampleCount = static_cast<std::size_t>(SAMPLE_RATE * NOTE_DURATION);
                     AudioBuffer buffer(sampleCount);
                     fillSineWave(buffer, freq, SAMPLE_RATE);
-                    SDL_QueueAudio(device, buffer.data(), buffer.size() * sizeof(float));
+                    if (audioAvailable) {
+                        SDL_QueueAudio(device, buffer.data(), buffer.size() * sizeof(float));
+                    }
 
                     scene.spawn(std::make_unique<Ripple>(color, 1.0f));
                 } catch (const InvalidFrequencyException& e) {
@@ -108,7 +111,9 @@ int main(int argc, char** argv) {
         std::this_thread::sleep_for(std::chrono::milliseconds(80));
     }
 
-    SDL_CloseAudioDevice(device);
+    if (audioAvailable) {
+        SDL_CloseAudioDevice(device);
+    }
     SDL_Quit();
 
     return 0;
