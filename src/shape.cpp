@@ -7,14 +7,23 @@ namespace {
     const char* RESET = "\033[0m";
 }
 
-Shape::Shape(const Color& color) : color_(color) {}
+Shape::Shape(const Color& color, int indent) : color_(color), indent_(indent) {}
 
 Shape::~Shape() {}
 
+void Shape::drawLine(char glyph, int width, float alpha) const {
+    if (width < 0) {
+        width = 0;
+    }
+    (void)alpha; // reserved for future true-alpha terminals
+    std::cout << std::string(indent_, ' ') << color_.toAnsi() << std::string(width, glyph)
+               << RESET << "\n";
+}
+
 // ---------------- Circle ----------------
 
-Circle::Circle(const Color& color, float radius)
-    : Shape(color), radius_(radius), life_(1.0f) {}
+Circle::Circle(const Color& color, int indent, float radius)
+    : Shape(color, indent), radius_(radius), life_(1.0f) {}
 
 void Circle::update(float dt) {
     life_ -= dt;
@@ -22,7 +31,7 @@ void Circle::update(float dt) {
 
 void Circle::draw() const {
     int width = static_cast<int>(radius_) * 2;
-    std::cout << color_.toAnsi() << std::string(width, 'o') << RESET << "\n";
+    drawLine('o', width);
 }
 
 bool Circle::isExpired() const {
@@ -31,8 +40,8 @@ bool Circle::isExpired() const {
 
 // ---------------- Square ----------------
 
-Square::Square(const Color& color, float side)
-    : Shape(color), side_(side), life_(1.0f) {}
+Square::Square(const Color& color, int indent, float side)
+    : Shape(color, indent), side_(side), life_(1.0f) {}
 
 void Square::update(float dt) {
     life_ -= dt;
@@ -40,7 +49,7 @@ void Square::update(float dt) {
 
 void Square::draw() const {
     int width = static_cast<int>(side_);
-    std::cout << color_.toAnsi() << std::string(width, '#') << RESET << "\n";
+    drawLine('#', width);
 }
 
 bool Square::isExpired() const {
@@ -49,18 +58,20 @@ bool Square::isExpired() const {
 
 // ---------------- Ripple ----------------
 
-Ripple::Ripple(const Color& color, float startRadius)
-    : Shape(color), radius_(startRadius), alpha_(255.0f) {}
+Ripple::Ripple(const Color& color, int indent, float startRadius)
+    : Shape(color, indent), radius_(startRadius), alpha_(255.0f) {}
 
 void Ripple::update(float dt) {
-    radius_ += 20.0f * dt;
-    alpha_ -= 150.0f * dt;
+    // Ripples grow and fade slowly, so they linger and form a wash of
+    // color across the terminal rather than disappearing instantly.
+    radius_ += 8.0f * dt;
+    alpha_ -= 35.0f * dt;
     alpha_ = std::max(alpha_, 0.0f);
 }
 
 void Ripple::draw() const {
     int width = static_cast<int>(radius_);
-    std::cout << color_.toAnsi() << std::string(width, '.') << RESET << "\n";
+    drawLine('.', width, alpha_);
 }
 
 bool Ripple::isExpired() const {

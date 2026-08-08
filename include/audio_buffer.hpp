@@ -29,7 +29,19 @@ private:
     std::size_t count_;
 };
 
-// Fills an existing buffer with a sine wave at the given frequency.
+// Fills an existing buffer with a pure sine wave at the given frequency.
 // Kept separate from AudioBuffer itself so the class stays focused on
 // raw memory ownership, not signal generation.
 void fillSineWave(AudioBuffer& buffer, double frequencyHz, double sampleRate);
+
+// Fills an existing buffer with a tone built from a fundamental frequency
+// plus a few quieter harmonic overtones (2x, 3x, 4x the fundamental),
+// the way a real plucked or bowed instrument sounds richer than a lab
+// tone generator. Also applies a short fade-in/fade-out envelope so
+// notes don't click at the start or end.
+void fillHarmonicTone(AudioBuffer& buffer, double frequencyHz, double sampleRate);
+
+// Mixes two buffers of equal size sample-by-sample, clamping to [-1, 1]
+// so multiple simultaneous notes (a chord) don't distort into noise.
+// Throws AudioLoadException if the buffers differ in size.
+AudioBuffer mixBuffers(const AudioBuffer& a, const AudioBuffer& b);
