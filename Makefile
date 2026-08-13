@@ -38,7 +38,7 @@ LDFLAGS_BASE:=$(LDFLAGS_BASE) -std=c++20
 ## platform-specific options for SDL2
 ifeq ($(OS),Windows_NT)
  	CXXFLAGS_BASE:=$(CXXFLAGS_BASE) -I/mingw64/include/SDL2
- 	LDFLAGS_BASE:=$(LDFLAGS_BASE) -lmingw32 -lSDL2main -lSDL2 -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_net -lSDL2_ttf
+	LDFLAGS_BASE:=$(LDFLAGS_BASE) -lmingw32 -lSDL2main -lSDL2 -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_ttf
  	DOXYGEN=doxygen
 else ifeq ($(shell sh -c 'uname'),Darwin)
  	CXXFLAGS_BASE:=$(CXXFLAGS_BASE) $(shell sh -c 'sdl2-config --cflags')
@@ -52,7 +52,7 @@ else
  	ifeq (, $(shell which sdl2-config))
  	else
  		CXXFLAGS_BASE:=$(CXXFLAGS_BASE) $(shell sh -c 'sdl2-config --cflags')
- 		LDFLAGS_BASE:=$(LDFLAGS_BASE) $(shell sh -c 'sdl2-config --libs') -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_net -lSDL2_ttf
+		LDFLAGS_BASE:=$(LDFLAGS_BASE) $(shell sh -c 'sdl2-config --libs') -lSDL2_gfx -lSDL2_image -lSDL2_mixer -lSDL2_ttf
  	endif
  	DOXYGEN=doxygen
 endif
